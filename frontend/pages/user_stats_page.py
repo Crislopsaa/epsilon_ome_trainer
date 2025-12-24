@@ -1,6 +1,6 @@
 """
 ES: Este script define la clase de la página de estadísticas del usuario.\n
-EN: This script defines the user stats page class.
+EN: This script implements the user stats page class.
 """
 
 from PyQt5.QtWidgets import QWidget
