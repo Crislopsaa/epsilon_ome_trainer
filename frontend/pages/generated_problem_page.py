@@ -1,6 +1,6 @@
 """
 ES: Este script define la clase de la página de problemas generados.\n
-EN: This script defines the problem page class.
+EN: This script implements the problem page class.
 """
 
 from PyQt5.QtWidgets import QWidget

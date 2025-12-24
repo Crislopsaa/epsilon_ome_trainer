@@ -1,6 +1,6 @@
 """
 ES: Este script define la clase de la página de información.\n
-EN: This script defines the information page class.
+EN: This script implements the information page class.
 """
 
 from PyQt5.QtWidgets import QWidget
