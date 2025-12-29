@@ -74,8 +74,8 @@ class HoverImageSwapButton(QPushButton):
     
     def handle_click(self):
         """
-        ES: Deshabilita el botón durante 3 segundos tras el clic.
-        EN: Disables the button for 3 seconds post-click.
+        ES: Deshabilita el botón durante 1 segundo tras el clic.
+        EN: Disables the button for a second post-click.
         """
         
         self.setEnabled(False)
@@ -83,7 +83,7 @@ class HoverImageSwapButton(QPushButton):
         if self.on_click_function:
             self.on_click_function()
         
-        QTimer.singleShot(3000, lambda: self.setEnabled(True))
+        QTimer.singleShot(1000, lambda: self.setEnabled(True))
     
 
     def paintEvent(self, event):
