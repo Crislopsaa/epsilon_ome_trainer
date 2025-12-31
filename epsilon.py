@@ -33,6 +33,12 @@ class MainWindow(QMainWindow):
         
         self.base_path = get_base_path()
         
+        # activando plugins de QtWebEngine       
+        # activating QtWebEngine plugins
+        QWebEngineSettings.globalSettings().setAttribute(
+            QWebEngineSettings.PluginsEnabled, True
+        )
+        
         epsilon_logo_path = self.base_path / "assets" / "images" / "epsilon_logo.png"
         
         self.setWindowTitle("Epsilon OME Trainer")
