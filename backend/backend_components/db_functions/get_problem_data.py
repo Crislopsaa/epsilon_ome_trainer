@@ -30,7 +30,7 @@ def get_problem_data(db_path: Path, course: str, difficulty: str, topic: str):
     # DEBUGGING
     if not all([db_path, course, difficulty, topic]):
         print(f"AVISO: Se le ha pasado algún parámetro nulo a la función que obtiene los datos de problema. Datos recibidos: {db_path=}, {course=}, {difficulty=}, {topic=}")
-        return
+        raise TypeError("ERROR: Se le ha pasado un parámetro nulo a la función get_problem_data")
     
     problem_type = (course, difficulty, topic)
     

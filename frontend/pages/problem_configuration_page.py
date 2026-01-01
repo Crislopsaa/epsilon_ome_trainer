@@ -144,27 +144,46 @@ class ProblemConfigurationPage(QWidget):
                 topic_selected = self.topic_selected
                 )
             self.emit_generated_problem_page_to_epsilon()
+            return
         
-        # si la página de problemas no se ha creado con éxito, esta es eliminada si es posible
-        # if the problem page was not created successfully, it is deleted if it is possible
+        # manejando las excepciones posibles
+        # managing posible exceptions
+        
+        # get_problem_data error
+        except LookupError:
+            QMessageBox.warning(
+                self.window(),
+                "NO HAY PROBLEMAS",
+                "Lo siento, ahora mismo no hay ningún problema generado que cumpla esas características, inténtalo más tarde."
+                )
+        
+        # latex2pdf error
+        except RuntimeError as e:
+            QMessageBox.critical(
+                self.window(),
+                "ERROR AL CREAR EL PROBLEMA",
+                f"Me temo que ha ocurrido un error al crear el PDF del problema:\n{e}"
+                )
+        
+        # FALLBACK
         except Exception as e:
             QMessageBox.critical(
                 self.window(),
                 "ERROR AL CREAR LA PÁGINA",
                 f"Me temo que ha ocurrido un error a la hora de crear la página con el problema:\n{e}"
             )
-            
-            try:
-                if hasattr(self, "generated_problem_page"):
-                    self.generated_problem_page.setParent(None)
-                    self.generated_problem_page.deleteLater()
-                    del self.generated_problem_page
-            
-            except Exception as e:
-                # DEBUGGING
-                print(f"ERROR: No se ha podido eliminar una página con problemas defectuosos con éxito:\n {e}")
-                
-            return
+        
+        # si ha habido un error, se elimina la página de problemas
+        # if an error has happened, the problem page is eliminated   
+        try:
+            if hasattr(self, "generated_problem_page"):
+                self.generated_problem_page.setParent(None)
+                self.generated_problem_page.deleteLater()
+                del self.generated_problem_page
+        
+        except Exception as e:
+            # DEBUGGING
+            print(f"ERROR: No se ha podido eliminar una página con problemas defectuosos con éxito:\n {e}")
             
 
     
