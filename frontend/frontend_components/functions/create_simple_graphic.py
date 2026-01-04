@@ -18,6 +18,10 @@ def create_simple_graphic(simple_data: list) -> Figure:
     ES: Crea un gráfico circular de Plotly que muestra los aciertos y los fallos del usuario.\n
     EN: Creates a Plotly pie chart that displays the user's correct answers and mistakes.
     
+    Warning:
+        ES: Si no hay suficientes datos para crear el gráfico, se lanza una ValueError.
+        EN: If there is not enough data to create the chart, a ValueError is raised.
+    
     :param simple_data: A list of two elements that contains the number of user's correct answers and mistakes in that order.
     :type simple_data: list
     :return: The Plotly pie chart that displays the user's correct answers and mistakes.
