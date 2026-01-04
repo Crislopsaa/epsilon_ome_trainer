@@ -30,7 +30,6 @@ class PlotlyGraphicsViewer(QWidget):
         super().__init__()
         
         self.base_path = base_path
-        self._tempfile_name = None
         
         self.main_layout = QVBoxLayout()
         
@@ -63,7 +62,7 @@ class PlotlyGraphicsViewer(QWidget):
         
         # si existen residuos de un gráfico cargado anteriormente, se borran
         # if there are residues from a previous graphic, they are deleted
-        if hasattr(self, "_tempfile_name") and os.path.exists(self._tempfile_name):
+        if hasattr(self, "_tempfile_name"):
             try:
                 os.remove(self._tempfile_name)
                 
@@ -102,7 +101,7 @@ class PlotlyGraphicsViewer(QWidget):
         self.graphic_viewer.load(QUrl.fromLocalFile(self.temp.name))
     
     def closeEvent(self, event):
-        if hasattr(self, "_tempfile_name") and os.path.exists(self._tempfile_name):
+        if hasattr(self, "_tempfile_name"):
             try:
                 os.remove(self._tempfile_name)
             
