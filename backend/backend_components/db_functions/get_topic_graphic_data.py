@@ -35,7 +35,7 @@ def get_topic_graphic_data(db_path: Path | str, abbreviated_topics: dict[str, st
                 topic,
                 COALESCE(SUM(correct_answers), 0),
                 COALESCE(SUM(incorrect_answers), 0)
-            FROM user_Stats
+            FROM user_stats
             GROUP BY topic
             """
             )

@@ -28,7 +28,7 @@ def get_simple_graphic_data(db_path: Path | str) -> list[int]:
                     COALESCE(SUM(correct_answers), 0),
                     COALESCE(SUM(incorrect_answers), 0)
                 FROM
-                    User_Stats
+                    user_stats
             """)
         
         # el uso de COALESCE evita que fetchone devuelva None (fallaría al usar list)
