@@ -63,10 +63,13 @@ def register_success_or_mistake(db_path: Path, course: str, difficulty: str, top
                 )
             
         else:
-            cursor.execute("""
-                            UPDATE user_stats
-                            SET incorrect_answers = incorrect_answers + 1
-                            WHERE course=? AND difficulty=? AND topic=?;
-                            """, problem_type)
+            cursor.execute(
+                """
+                UPDATE user_stats
+                SET incorrect_answers = incorrect_answers + 1
+                WHERE course=? AND difficulty=? AND topic=?;
+                """,
+                problem_type
+                )
           
         conn.commit()
