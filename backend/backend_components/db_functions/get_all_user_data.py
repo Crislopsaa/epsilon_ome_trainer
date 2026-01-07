@@ -30,7 +30,7 @@ def get_all_user_data(db_path: Path | str, abbreviated_topics: dict) -> list[dic
         cursor = conn.cursor()
             
         cursor.execute("""
-                        SELECT course, difficulty, topic, correct_answers, incorrect_answers
+                        SELECT grade, difficulty, topic, correct_answers, incorrect_answers
                         FROM user_stats
                         """)
         rows = cursor.fetchall()

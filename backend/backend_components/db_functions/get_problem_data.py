@@ -1,6 +1,6 @@
 """
 ES: Este script define una función que obtiene un problema de la base de datos local con el curso, dificultad y temática dadas.\n
-EN: This script defines a function that gets a problem from the local database with the given course, difficulty and topic.
+EN: This script defines a function that gets a problem from the local database with the given grade, difficulty and topic.
 """
 
 
@@ -8,10 +8,10 @@ from pathlib import Path
 import sqlite3
 
 
-def get_problem_data(db_path: Path, course: str, difficulty: str, topic: str):
+def get_problem_data(db_path: Path, grade: str, difficulty: str, topic: str):
     """
     ES: Obtiene un problema de la base de datos local con un curso, dificultad y temática dadas.\n
-    EN: Gets a problem from the local database with the given course, difficulty and topic.
+    EN: Gets a problem from the local database with the given grade, difficulty and topic.
     
     Warning:
         ES: Si no hay ningún problema disponible con esas características, se lanza un LookupError.
@@ -19,8 +19,8 @@ def get_problem_data(db_path: Path, course: str, difficulty: str, topic: str):
     
     :param db_path: Absolute path to the local database.
     :type db_path: Path
-    :param course: The course of the problem to get.
-    :type course: str
+    :param course: The grade of the problem to get.
+    :type grade: str
     :param difficulty: The difficulty of the problem to get.
     :type difficulty: str
     :param topic: The topic of the problem to get.
@@ -28,11 +28,11 @@ def get_problem_data(db_path: Path, course: str, difficulty: str, topic: str):
     """
     
     # DEBUGGING
-    if not all([db_path, course, difficulty, topic]):
-        print(f"AVISO: Se le ha pasado algún parámetro nulo a la función que obtiene los datos de problema. Datos recibidos: {db_path=}, {course=}, {difficulty=}, {topic=}")
+    if not all([db_path, grade, difficulty, topic]):
+        print(f"AVISO: Se le ha pasado algún parámetro nulo a la función que obtiene los datos de problema. Datos recibidos: {db_path=}, {grade=}, {difficulty=}, {topic=}")
         raise TypeError("ERROR: Se le ha pasado un parámetro nulo a la función get_problem_data")
     
-    problem_type = (course, difficulty, topic)
+    problem_type = (grade, difficulty, topic)
     
     
     with sqlite3.connect(db_path) as conn:
@@ -40,7 +40,7 @@ def get_problem_data(db_path: Path, course: str, difficulty: str, topic: str):
         cursor.execute("""
                     SELECT rowid, formulation, procedure, short_solution
                     FROM generated_problems
-                    WHERE course=? AND difficulty=? AND topic=?
+                    WHERE grade=? AND difficulty=? AND topic=?
                     ORDER BY rowid
                     LIMIT 1
                     """, problem_type)
@@ -66,4 +66,4 @@ def get_problem_data(db_path: Path, course: str, difficulty: str, topic: str):
         # si no se encuentra el problema, se lanza un error
         # if the problem is not found, an error is raised
         else:
-            raise LookupError(f"NO PROBLEM AVAILABLE for {course} - {difficulty} - {topic}")
+            raise LookupError(f"NO PROBLEM AVAILABLE for {grade} - {difficulty} - {topic}")

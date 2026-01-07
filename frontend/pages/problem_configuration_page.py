@@ -62,12 +62,12 @@ class ProblemConfigurationPage(QWidget):
 
         # creando los selectores de las opciones d eproblema
         # creating the selectors of problem options
-        self.course_select = ProblemSelector(
+        self.grade_select = ProblemSelector(
             base_path = self.base_path,
             options = ["1º y 2º ESO", "COMING SOON"],
             title="Curso"
             )
-        self.main_layout.addWidget(self.course_select, alignment = Qt.AlignCenter)
+        self.main_layout.addWidget(self.grade_select, alignment = Qt.AlignCenter)
         
         
         self.difficulty_select = ProblemSelector(
@@ -120,7 +120,7 @@ class ProblemConfigurationPage(QWidget):
         
         # si no se selecciona un curso válido, se muetra una ventana informándolo
         # if a valid course is not selected, a warning window is displayed
-        if self.course_select.get_value() == "COMING SOON":
+        if self.grade_select.get_value() == "COMING SOON":
             QMessageBox.warning(
                 self.window(),
                 "CURSO NO DISPONIBLE",
@@ -130,7 +130,7 @@ class ProblemConfigurationPage(QWidget):
         
         # obteniendo las características del problema
         # getting the problem settings
-        self.course_selected = self.course_select.get_value()
+        self.grade_selected = self.grade_select.get_value()
         self.difficulty_selected = self.difficulty_select.get_value()
         self.topic_selected = self.topic_select.get_value()
         
@@ -139,7 +139,7 @@ class ProblemConfigurationPage(QWidget):
         try:
             self.generated_problem_page = GeneratedProblemPage(
                 base_path = self.base_path,
-                course_selected = self.course_selected,
+                grade_selected = self.grade_selected,
                 difficulty_selected = self.difficulty_selected,
                 topic_selected = self.topic_selected
                 )

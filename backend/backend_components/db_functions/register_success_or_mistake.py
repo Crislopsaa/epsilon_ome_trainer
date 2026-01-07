@@ -8,7 +8,7 @@ from pathlib import Path
 import sqlite3
 
 
-def register_success_or_mistake(db_path: Path, course: str, difficulty: str, topic: str, user_answer_status: bool = False):
+def register_success_or_mistake(db_path: Path, grade: str, difficulty: str, topic: str, user_answer_status: bool = False):
     """
     ES: Registra un acierto o fallo en una base de datos local dada.\n
     EN: Registers a right answer or a mistake in a given local database.
@@ -19,8 +19,8 @@ def register_success_or_mistake(db_path: Path, course: str, difficulty: str, top
     
     :param db_path: Absolute path to the local database.
     :type db_path: Path
-    :param course: The course of the problem solved.
-    :type course: str
+    :param grade: The grade of the problem solved.
+    :type grade: str
     :param difficulty: The difficulty of the problem solved.
     :type difficulty: str
     :param topic: The topic of the problem solved.
@@ -30,11 +30,11 @@ def register_success_or_mistake(db_path: Path, course: str, difficulty: str, top
     """
     
     # DEBUGGING
-    if not all([db_path, course, difficulty, topic]):
-        print(f"AVISO: Se le ha pasado algún parámetro nulo a la función que registra los aciertos y fallos. Datos recibidos: {db_path=}, {course=}, {difficulty=}, {topic=}")
+    if not all([db_path, grade, difficulty, topic]):
+        print(f"AVISO: Se le ha pasado algún parámetro nulo a la función que registra los aciertos y fallos. Datos recibidos: {db_path=}, {grade=}, {difficulty=}, {topic=}")
         return
     
-    problem_type = (course, difficulty, topic)
+    problem_type = (grade, difficulty, topic)
 
 
     with sqlite3.connect(db_path) as conn:
@@ -44,7 +44,7 @@ def register_success_or_mistake(db_path: Path, course: str, difficulty: str, top
         # if it does not exist a row with that problem type, it is created
         cursor.execute(
             """
-            INSERT OR IGNORE INTO user_stats (course, difficulty, topic, correct_answers, incorrect_answers)
+            INSERT OR IGNORE INTO user_stats (grade, difficulty, topic, correct_answers, incorrect_answers)
             VALUES (?, ?, ?, 0, 0)
             """,
             problem_type
@@ -57,7 +57,7 @@ def register_success_or_mistake(db_path: Path, course: str, difficulty: str, top
                 """
                 UPDATE user_stats
                 SET correct_answers = correct_answers + 1
-                WHERE course=? AND difficulty=? AND topic=?;
+                WHERE grade=? AND difficulty=? AND topic=?;
                 """,
                 problem_type
                 )
@@ -67,7 +67,7 @@ def register_success_or_mistake(db_path: Path, course: str, difficulty: str, top
                 """
                 UPDATE user_stats
                 SET incorrect_answers = incorrect_answers + 1
-                WHERE course=? AND difficulty=? AND topic=?;
+                WHERE grade=? AND difficulty=? AND topic=?;
                 """,
                 problem_type
                 )

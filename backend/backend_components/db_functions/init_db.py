@@ -27,7 +27,7 @@ def init_db():
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS generated_problems(
-                course TEXT,
+                grade TEXT,
                 difficulty TEXT,
                 topic TEXT,
                 formulation TEXT,
@@ -42,7 +42,7 @@ def init_db():
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS user_stats(
-            course TEXT,
+            grade TEXT,
             difficulty TEXT,
             topic TEXT,
             correct_answers INTEGER DEFAULT 0,

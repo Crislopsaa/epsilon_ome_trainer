@@ -34,7 +34,7 @@ class GeneratedProblemPage(QWidget):
     
     :param base_path: Absolute path to the main directory.
     :type base_path: Path
-    :param course: Course of the problem to display.
+    :param course: Grade of the problem to display.
     :type course: str
     :param difficulty: Difficulty of the problem to display.
     :type difficulty: str
@@ -45,7 +45,7 @@ class GeneratedProblemPage(QWidget):
     change_page_signal = pyqtSignal(str)
     user_stats_changed_signal = pyqtSignal()
     
-    def __init__(self, base_path: Path, course_selected: str, difficulty_selected: str, topic_selected: str):
+    def __init__(self, base_path: Path, grade_selected: str, difficulty_selected: str, topic_selected: str):
         super().__init__()
         
         self.base_path = base_path
@@ -56,7 +56,7 @@ class GeneratedProblemPage(QWidget):
         self.background_path = self.base_path / "assets" / "images" / "problems_page_background.png"
         self.background = QPixmap(str(self.background_path))
         
-        self.course_selected = course_selected
+        self.grade_selected = grade_selected
         self.difficulty_selected = difficulty_selected
         self.topic_selected = topic_selected
         
@@ -64,7 +64,7 @@ class GeneratedProblemPage(QWidget):
         # exceptions are not managed here because they are done so in the configuration page
         self.formulation, self.procedure, self.short_solution = get_problem_data(
             db_path = self.db_path,
-            course = course_selected,
+            grade = grade_selected,
             difficulty = difficulty_selected,
             topic = topic_selected,
             )            
@@ -135,7 +135,7 @@ class GeneratedProblemPage(QWidget):
         register_success_or_mistake(
             db_path = self.db_path,
             user_answer_status = self.user_answer_status,
-            course = self.course_selected, 
+            grade = self.grade_selected, 
             difficulty = self.difficulty_selected,
             topic = self.topic_selected
             )
