@@ -11,16 +11,28 @@ from llama_cpp import Llama
 # importing custom functions
 from backend.backend_components.other_functions.check_latex import check_latex
 
+# importando clases personalizadas
+# importing custom classes
+from backend.backend_components.classes.worker import Worker
+from backend.backend_components.classes.exceptions import GenerationStopException, InvalidLaTeXError, ProblemStructureError
 
-def generate_problem(problem_to_generate: list | tuple, llm: Llama) -> tuple[str, str, str]:
+
+def generate_problem(problem_to_generate: list | tuple, llm: Llama, worker: Worker = None) -> tuple[str, str, str]:
     """
-    ES: Utiliza llama_cpp para hacer una inferencia con la IA guardada localmente: generar un problema matemático programado en LaTeX, el núcleo de la aplicación.
+    ES: Utiliza llama_cpp para hacer una inferencia con la IA guardada localmente, generando un problema matemático programado en LaTeX, el núcleo de la aplicación.
     
-    EN: Uses llama_cpp to make an inference with the locally stored AI: generate a mathematical problem coded in LaTeX, the app's core.
+    EN: Uses llama_cpp to make an inference with the locally stored AI, generating a mathematical problem coded in LaTeX, the app's core.
     
     Warning:
-        ES: Si el código LaTeX de los problemas contiene un error evidente, se lanza un ValueError.
-        EN: If the problem's LaTeX code contains an evident error, a ValueError is raised.
+        ES:
+            Si el código LaTeX de los problemas contiene un error evidente, se lanza un InvalidLaTeXError.
+            Si el problema no se ha dividido correctamente, se lanza un ProblemStructureError.
+            Si se frena la generación de problemas, se lanza una excepción GenerationStopException.
+        
+        EN:
+            If the problem's LaTeX code contains an evident error, a InvalidLaTeXError is raised.
+            If the problem has not been divided successfully, a ProblemStructureError is raised.
+            If problem generation is stopped, a GenerationStopException is raised.
     
     :param problem_to_generate: The type (grade, difficulty and topic) of the problem to generate.
     :type problem_to_generate: list | tuple
@@ -31,8 +43,11 @@ def generate_problem(problem_to_generate: list | tuple, llm: Llama) -> tuple[str
         - presence_penalty: to avoid the repetition of words between problems (mainly for people's names)
         - stop: to ensure that only one problem is generated.
         - echo: to prevent the answer from containing the instruction.
+        - stream: to be able to interrupt problem generation at any time.
         
     :type llm: Llama
+    :param worker: The Worker (QObject) that will execute this function in an asynchronous thread.
+    :type worker: Worker
     :return: The problem divided by sections: Formulation, Procedure and Short Solution.
     :rtype: tuple[str, str, str]
     """
@@ -61,17 +76,27 @@ def generate_problem(problem_to_generate: list | tuple, llm: Llama) -> tuple[str
         temperature=0.7,
         presence_penalty = 0.1,
         stop=["###", "Instrucción:", "Mensaje:"],
-        echo = False
+        echo = False,
+        stream = True
         )
 
-    problem = completion['choices'][0]['text'].strip()
+    problem = ""
+    for output in completion:
+        # el usuario puede interrumpir la generación de problemas en cualquier momento
+        # the user can interrupt problem generation at any time
+        if worker and worker.thread().isInterruptionRequested():
+            raise GenerationStopException
+            
+        token = output['choices'][0]['text']
+        problem += token
+
     
     # "-----" se usa como separador entre las partes del problema: enunciado, procedimiento y solución final
     # "-----" is used as a separator between the different problem parts: formulation, procedure and final answer
     sections = [s.strip() for s in problem.split("-----") if s.strip()]
 
     if len(sections) != 3:
-        raise ValueError("[generate_problem] ERROR: No se dividieron las partes del problema correctamente")
+        raise ProblemStructureError("[generate_problem] ERROR: No se dividieron las partes del problema correctamente")
     
     
     for i, section in enumerate(sections):
@@ -79,7 +104,7 @@ def generate_problem(problem_to_generate: list | tuple, llm: Llama) -> tuple[str
             check_latex(section)
     
         except Exception as e:
-            raise ValueError(f"[generate_problem] ERROR: El código LaTeX generado no es válido en la sección número {i}:\n\n{e}")
+            raise InvalidLaTeXError(f"[generate_problem] ERROR: El código LaTeX generado no es válido en la sección número {i}:\n\n{e}")
     
     
     formulation = sections[0]
