@@ -5,7 +5,7 @@ EN: This script defines a function that manages problem generation taking into a
 """
 
 
-import itertools, sqlite3, time
+import itertools, sqlite3, time, random
 from pathlib import Path
 from llama_cpp import Llama
 
@@ -19,6 +19,7 @@ from backend.problem_generator.problem_generator import generate_problem
 # importando clases personalizadas
 # importing custom functions
 from backend.backend_components.classes.worker import Worker
+from backend.backend_components.classes.exceptions import GenerationStopException
 
 
 def manage_problem_generation(ai_path: Path, db_path: Path | str,  generation_request: tuple[str, str, str, int] | int, worker: Worker, progress_callback: callable = None):        
@@ -29,7 +30,11 @@ def manage_problem_generation(ai_path: Path, db_path: Path | str,  generation_re
     
     Usage:
         ES: Debe ser ejecutado en un QThread secundario para que no se congele la UI.
-        EN: It must be executed in a secondary QThread to avoid freezing the UI. 
+        EN: It must be executed in a secondary QThread to avoid freezing the UI.
+        
+    Warning:
+        ES: Si se pide interrumpir el thread, se lanza un GenerationStopException.
+        EN: If thread's interruption is requested, a GenerationStopException is raised.
     
     :param ai_path: The absolute path of the AI's GGUF file.
     :type ai_path: Path
@@ -78,6 +83,8 @@ def manage_problem_generation(ai_path: Path, db_path: Path | str,  generation_re
         cursor = conn.cursor()
         
         for i in range(quantity):
+            if worker and worker.thread().isInterruptionRequested():
+                raise GenerationStopException
             
             if automatic_mode:
                 problem_to_generate = find_least_problem(cursor, combinations)
@@ -88,6 +95,7 @@ def manage_problem_generation(ai_path: Path, db_path: Path | str,  generation_re
             
             if demo_mode:
                 problem_data = create_example_problem()
+                time.sleep(random.uniform(0.7, 1.5))
                    
             else:
                 problem_data = generate_problem(
