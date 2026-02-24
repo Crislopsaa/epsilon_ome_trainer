@@ -7,12 +7,11 @@ EN: This script implements a custom button that allows the user to request probl
 from pathlib import Path
 
 from PyQt5.QtWidgets import QWidget, QPushButton, QMessageBox, QApplication
-from PyQt5.QtGui import QPixmap, QPainter
-from PyQt5.QtCore import QThread
+from PyQt5.QtGui import QPainter, QBrush, QColor
+from PyQt5.QtCore import Qt, QThread, QRectF
 
 # importando funciones personalizadas
 # importing custom functions
-from frontend.frontend_components.functions.paint_background import paint_background
 from backend.problem_generator.manage_problem_generation import manage_problem_generation
 
 # importando clases personalizadas
@@ -43,9 +42,47 @@ class ProblemGenerationButton(QPushButton):
         self.base_path = base_path
         self.db_path = db_path
         
-        self.background_path = self.base_path / "assets" / "images" / "problem_generation_button.png"
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFocusPolicy(Qt.TabFocus)
         
-        self.background = QPixmap(str(self.background_path))
+        self.setStyleSheet(
+            """
+            QPushButton {
+                background-color: qlineargradient(
+                    x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #7DB63A,
+                    stop: 1 #5A8F20
+                );
+                border: none;
+                border-radius: 12px;
+            }
+
+            QPushButton:hover {
+                background-color: qlineargradient(
+                    x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #8ECC44,
+                    stop: 1 #6AA028
+                );
+            }
+
+            QPushButton:pressed {
+                background-color: qlineargradient(
+                    x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #3D6610,
+                    stop: 1 #5A8F20
+                );
+            }
+
+            QPushButton:focus {
+                border: 2px solid #AEDD6A;
+                outline: none;
+            }
+
+            QPushButton:disabled {
+                background-color: #CCCCCC;
+            }
+            """
+        )
         
         self.clicked.connect(self.display_dialog)
     
@@ -208,9 +245,48 @@ class ProblemGenerationButton(QPushButton):
     
     def paintEvent(self, event):
         """
-        ES: Pinta el fondo con una imagen.
+        ES: Pinta el fondo del botón con una cruz personalizado hecho con QPainter.
         
-        EN: Paints the background with an image.
+        EN: Paints the button's background with a custom QPainter-made cross.
         """
+        
+        # haciendo el paintEvent normal para que se aplique el QSS
+        # executing the regular paintEvent for QSS application
+        super().paintEvent(event)
+
         painter = QPainter(self)
-        paint_background(widget = self, painter = painter, pixmap = self.background)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w, h = self.width(), self.height()
+        cx, cy = w / 2, h / 2
+
+        # desplazamiento sutil al pulsar
+        # slight movement when pulsed
+        offset = 1 if self.isDown() else 0
+
+
+        arm_long = w * 0.29
+        arm_thick = w * 0.09
+        radius = arm_thick * 0.4
+
+
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(QColor("#FFFFFF")))
+
+        h_rect = QRectF(
+            cx - arm_long  + offset,
+            cy - arm_thick + offset,
+            arm_long * 2,
+            arm_thick * 2
+        )
+        painter.drawRoundedRect(h_rect, radius, radius)
+
+        v_rect = QRectF(
+            cx - arm_thick + offset,
+            cy - arm_long  + offset,
+            arm_thick * 2,
+            arm_long * 2
+        )
+        painter.drawRoundedRect(v_rect, radius, radius)
+        
+        painter.end()
