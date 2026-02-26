@@ -47,7 +47,7 @@ class InformationPage(QWidget):
         self.back_button.setGeometry(20, 20, 40, 40)
         
              
-        self.pdf_path = self.base_path / "assets" / "documents" / "epsilon_information.pdf"
+        self.pdf_path = self.base_path / "assets" / "documents" / "README.pdf"
         self.pdf_viewer = PDFViewer(str(self.pdf_path))
         self.pdf_viewer.setGeometry(1070, 100, 665, 800)
         self.pdf_viewer.setParent(self)
