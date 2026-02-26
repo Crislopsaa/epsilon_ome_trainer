@@ -1,5 +1,6 @@
 """
-ES: Este script define la clase de la página de estadísticas del usuario.\n
+ES: Este script define la clase de la página de estadísticas del usuario.
+
 EN: This script implements the user stats page class.
 """
 
@@ -10,14 +11,12 @@ from PyQt5.QtWidgets import QWidget, QLabel, QComboBox, QStackedWidget, QVBoxLay
 from PyQt5.QtGui import QPixmap, QPainter
 from PyQt5.QtCore import Qt, pyqtSignal
 
-# importando clases personalizadas
-# importing custom classes
+# CLASES / CLASSES
 from frontend.frontend_components.classes.back_button import BackButton
 from frontend.frontend_components.classes.info_button import InfoButton
 from frontend.frontend_components.classes.plotly_graphics_viewer import PlotlyGraphicsViewer
 
-# importando funciones personalizadas
-# importing custom functions
+# FUNCIONES / FUNCTIONS
 from frontend.frontend_components.functions.paint_background import paint_background
 from frontend.frontend_components.functions.create_simple_graphic import create_simple_graphic
 from frontend.frontend_components.functions.create_topic_graphic import create_topic_graphic
@@ -32,7 +31,8 @@ from backend.backend_components.db_functions.get_db_path import get_db_path
 
 class UserStatsPage(QWidget):
     """
-    ES: La página que muestra las estadísticas del usuario.\n
+    ES: La página que muestra las estadísticas del usuario.
+    
     EN: The page that displays the user stats.
     
     :param base_path: Absolute path to the main directory.
@@ -41,22 +41,21 @@ class UserStatsPage(QWidget):
     
     change_page_signal = pyqtSignal(str)
     
-    def __init__(self, base_path: Path):
+    def __init__(self, base_path: Path, db_path: Path | str):
         super().__init__()
         
         self.base_path = base_path
-        self.db_path = get_db_path()
+        self.db_path = db_path
         
-
         self.background_path = self.base_path / "assets" / "images" / "stats_page_background.png"
         self.background = QPixmap(str(self.background_path))
         
         main_layout = QVBoxLayout()
         
-        self.back_button = BackButton(self.go_back)
-        main_layout.addWidget(self.back_button, alignment = Qt.AlignLeft | Qt.AlignTop)
-
+        self.back_button = BackButton(self.go_back, self)
+        self.back_button.setGeometry(20, 20, 40, 40)
         
+        main_layout.addSpacing(80)
         self.title = QLabel()
         self.title.setText("TUS ESTADÍSTICAS")
         self.title.setStyleSheet("""
@@ -67,32 +66,29 @@ class UserStatsPage(QWidget):
                                 """)
         main_layout.addWidget(self.title, alignment = Qt.AlignCenter)
         
-        
-        # creando la sección de elección de gráfico
-        # creating the chart selection section
         self.chart_selection_section = QHBoxLayout()
         self.explanation = """
-                        <p>
-                            Esta sección está dedicada a mostrar gráficos con tus estadísticas, siendo estas la cantidad de problemas que has hecho bien y mal por tipo (curso, dificultad y categoría).<br>
-                            
-                            Abajo puedes ver un selectbox en el que puedes elegir entre los siguientes gráficos:
-                            <ul>
-                                <li>Sencillo: Solo muestra cuántos problemas has hecho bien y cuántos mal.</li>
-                                <li>Por temática: Muestra cuántos problemas has hecho bien y cuántos mal, agrupando los datos por temática (Álgebra, Geometría...).</li>
-                                <li>Por dificultad: Muestra cuántos problemas has hecho bien y cuántos mal, agrupando los datos por dificultad (Provincial, Regional y Nacional).</li>
-                                <li>Completo: Muestra cuántos problemas has hecho bien y cuántos mal, agrupando los datos por curso, dificultad y temática.</li>
-                            </ul>
-                            
-                            Además, se utilizarán abreviaturas para las distintos categorías:
-                            <ul>
-                                <li> A.T.N.: Aritmética y Teoría de Números</li>
-                                <li> Al.: Álgebra</li>
-                                <li> Geo.: Geometría</li>
-                                <li> C.P.: Combinatoria y Probabilidad</li>
-                                <li> L.R.: Lógica y Razonamiento</li>
-                            </ul>
-                        </p>
-                        """
+            <p>
+                Esta sección está dedicada a mostrar gráficos con tus estadísticas, siendo estas la cantidad de problemas que has hecho bien y mal por tipo (curso, dificultad y categoría).<br>
+                
+                Abajo puedes ver un selectbox en el que puedes elegir entre los siguientes gráficos:
+                <ul>
+                    <li>Sencillo: Solo muestra cuántos problemas has hecho bien y cuántos mal.</li>
+                    <li>Por temática: Muestra cuántos problemas has hecho bien y cuántos mal, agrupando los datos por temática (Álgebra, Geometría...).</li>
+                    <li>Por dificultad: Muestra cuántos problemas has hecho bien y cuántos mal, agrupando los datos por dificultad (Provincial, Regional y Nacional).</li>
+                    <li>Completo: Muestra cuántos problemas has hecho bien y cuántos mal, agrupando los datos por curso, dificultad y temática.</li>
+                </ul>
+                
+                Además, se utilizarán abreviaturas para las distintos categorías:
+                <ul>
+                    <li> A.T.N.: Aritmética y Teoría de Números</li>
+                    <li> Ál.: Álgebra</li>
+                    <li> Geo.: Geometría</li>
+                    <li> C.P.: Combinatoria y Probabilidad</li>
+                    <li> L.R.: Lógica y Razonamiento</li>
+                </ul>
+            </p>
+            """
         self.explanation_button = InfoButton(
             base_path = self.base_path,
             window_title = "TIPOS DE GRÁFICOS",
@@ -156,7 +152,8 @@ class UserStatsPage(QWidget):
     
     def go_back(self):
         """
-        ES: Cambia la página por la página de inicio.\n
+        ES: Cambia la página por la página de inicio.
+        
         EN: Switches the page to the home page.
         """
         self.change_page_signal.emit("home page")
@@ -164,7 +161,8 @@ class UserStatsPage(QWidget):
     
     def paintEvent(self, event):
         """
-        ES: Pinta el fondo con una imagen.\n
+        ES: Pinta el fondo con una imagen.
+        
         EN: Paints the background with an image.
         """
         painter = QPainter(self)
@@ -229,6 +227,7 @@ class UserStatsPage(QWidget):
     def set_insufficient_data_message(self, error: ValueError):
         """
         ES: Avisa al usuario de que no ha resuelto suficientes problemas.
+        
         EN: Alerts the user that they have not solved enough problems.
         
         :param error: Exception derived from the lack of problems.
@@ -246,6 +245,7 @@ class UserStatsPage(QWidget):
     def set_error_message(self, error: Exception):
         """
         ES: Avisa al usuario de que ha habido un error.
+        
         EN: Alerts the user that an error has occurred.
         
         :param error: Exception produced while creating a chart.

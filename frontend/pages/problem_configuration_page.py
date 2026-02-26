@@ -1,5 +1,6 @@
 """
-ES: Este script define la clase de la página de configuración de problemas.\n
+ES: Este script define la clase de la página de configuración de problemas.
+
 EN: This script implements the problem configuration page class.
 """
 
@@ -9,15 +10,14 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QMessageBox
 from PyQt5.QtGui import QPixmap, QPainter
 from PyQt5.QtCore import Qt, pyqtSignal
 
-# importando clases personalizadas
-# importing custom classes
+# CLASES / CLASSES
 from frontend.pages.generated_problem_page import GeneratedProblemPage
 from frontend.frontend_components.classes.problem_selector import ProblemSelector
 from frontend.frontend_components.classes.hover_image_swap_button import HoverImageSwapButton
 from frontend.frontend_components.classes.back_button import BackButton
+from frontend.frontend_components.classes.problem_generation_button import ProblemGenerationButton
 
-# importando funciones personalizadas
-# importing custom functions
+# FUNCIONES / FUNCTIONS
 from frontend.frontend_components.functions.paint_background import paint_background
 
 
@@ -33,35 +33,43 @@ class ProblemConfigurationPage(QWidget):
     change_page_signal = pyqtSignal(str)
     create_generated_problem_page_signal = pyqtSignal(GeneratedProblemPage)
     
-    def __init__(self, base_path: Path):
+    def __init__(self, base_path: Path, db_path: Path | str):
         super().__init__()
         self.base_path = base_path
+        self.db_path = db_path
         
         self.main_layout = QVBoxLayout()
         
-        # creando el pixmap del fondo
-        # creating the background's pixmap
         self.background_path = base_path / "assets" / "images" / "problems_page_background.png"
         self.background = QPixmap(str(self.background_path))
         
-        self.back_button = BackButton(self.go_back_to_home)
-        self.main_layout.addWidget(self.back_button, alignment = Qt.AlignTop | Qt.AlignLeft)
+        self.back_button = BackButton(self.go_back_to_home, self)
+        self.back_button.setGeometry(20, 20, 40, 40)
         
-        # creando el título principal
-        # creating the main title
+        self.problem_generation_button = ProblemGenerationButton(
+            base_path = self.base_path,
+            db_path = self.db_path,
+            parent = self
+            )
+        self.problem_generation_button.setGeometry(1845, 20, 55, 55)
+
+
+        self.main_layout.addSpacing(50)
         self.title = QLabel("PROBLEMAS")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("""
-                                font-size: 75px;
-                                font-weight: bold;
-                                font-family: 'Rockwell Condensed';
-                                color: #ffffff;
-                                """)
-        self.main_layout.addWidget(self.title)
+        self.title.setStyleSheet(
+            """
+            font-size: 75px;
+            font-weight: bold;
+            font-family: 'Rockwell Condensed';
+            color: #ffffff;
+            """
+            )
+        self.title.setMaximumWidth(1200)
+        self.main_layout.addWidget(self.title, alignment = Qt.AlignCenter)
         self.main_layout.addStretch()
 
-        # creando los selectores de las opciones d eproblema
-        # creating the selectors of problem options
+
         self.grade_select = ProblemSelector(
             base_path = self.base_path,
             options = ["1º y 2º ESO", "COMING SOON"],
@@ -93,17 +101,13 @@ class ProblemConfigurationPage(QWidget):
         self.main_layout.addStretch()
         
         
-        # obteniendo las rutas de las imágenes del botón cambia a la siguiente página
-        # obtaining the paths of the images of the button that changes the current page to the next one
         self.black_anvil_path = base_path / "assets" / "images" / "black_anvil.png"
         self.golden_anvil_path = base_path / "assets" / "images" / "golden_anvil.png"
         
-        # creando ese botón
-        # creating that button
         self.generate_button = HoverImageSwapButton(
             static_image_path = self.black_anvil_path,
             swap_image_path = self.golden_anvil_path,
-            on_click_function = self.generate_problem
+            on_click_function = self.init_problem_page
             )
         self.generate_button.setFixedSize(200, 100)
         self.main_layout.addWidget(self.generate_button, alignment = Qt.AlignCenter)
@@ -112,9 +116,10 @@ class ProblemConfigurationPage(QWidget):
         self.setLayout(self.main_layout)
 
     
-    def generate_problem(self):
+    def init_problem_page(self) -> None:
         """
-        ES: Crea la página que muestra el problema generado.\n
+        ES: Crea la página que muestra el problema generado.
+        
         EN: Creates the problem page that displays the generated problem.
         """
         
@@ -127,9 +132,7 @@ class ProblemConfigurationPage(QWidget):
                 "En el futuro se añadirán más cursos, pero de momento solo están disponibles los mostrados."
             )
             return
-        
-        # obteniendo las características del problema
-        # getting the problem settings
+    
         self.grade_selected = self.grade_select.get_value()
         self.difficulty_selected = self.difficulty_select.get_value()
         self.topic_selected = self.topic_select.get_value()
@@ -146,8 +149,6 @@ class ProblemConfigurationPage(QWidget):
             self.emit_generated_problem_page_to_epsilon()
             return
         
-        # manejando las excepciones posibles
-        # managing posible exceptions
         
         # get_problem_data error
         except LookupError:
@@ -173,8 +174,8 @@ class ProblemConfigurationPage(QWidget):
                 f"Me temo que ha ocurrido un error a la hora de crear la página con el problema:\n{e}"
             )
         
-        # si ha habido un error, se elimina la página de problemas
-        # if an error has happened, the problem page is eliminated   
+        # Limpieza de recursos en caso de error para evitar fugas de memoria
+        # Resource cleanup on error to prevent memory leaks  
         try:
             if hasattr(self, "generated_problem_page"):
                 self.generated_problem_page.setParent(None)
@@ -187,21 +188,21 @@ class ProblemConfigurationPage(QWidget):
             
 
     
-    def go_back_to_home(self):
+    def go_back_to_home(self) -> None:
         """
-        ES: Cambia la página por la página de inicio.\n
+        ES: Cambia la página por la página de inicio.
+        
         EN: Switches the page to the home page.
         """
-        
         self.change_page_signal.emit("home page")
 
 
-    def emit_generated_problem_page_to_epsilon(self):
+    def emit_generated_problem_page_to_epsilon(self) -> None:
         """
-        ES: Envía la página que muestra el problema al script principal.\n
+        ES: Envía la página que muestra el problema al script principal.
+        
         EN: Emits the page that displays the problem to the main script.
         """
-        
         self.create_generated_problem_page_signal.emit(self.generated_problem_page)
         
         # eliminando su referencia para evitar conflictos futuros
@@ -209,9 +210,10 @@ class ProblemConfigurationPage(QWidget):
         del self.generated_problem_page
 
     
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         """
-        ES: Pinta el fondo con una imagen.\n
+        ES: Pinta el fondo con una imagen.
+        
         EN: Paints the background with an image.
         """
         painter = QPainter(self)
