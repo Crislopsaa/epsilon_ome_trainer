@@ -12,10 +12,13 @@ from PyQt5.QtCore import Qt, pyqtSignal
 
 # CLASES / CLASSES
 from frontend.pages.generated_problem_page import GeneratedProblemPage
+
 from frontend.frontend_components.classes.problem_selector import ProblemSelector
 from frontend.frontend_components.classes.hover_image_swap_button import HoverImageSwapButton
 from frontend.frontend_components.classes.back_button import BackButton
 from frontend.frontend_components.classes.problem_generation_button import ProblemGenerationButton
+
+from backend.backend_components.classes.exceptions import PDFLatexNotFoundError
 
 # FUNCIONES / FUNCTIONS
 from frontend.frontend_components.functions.paint_background import paint_background
@@ -157,14 +160,23 @@ class ProblemConfigurationPage(QWidget):
                 "NO HAY PROBLEMAS",
                 "Lo siento, ahora mismo no hay ningún problema generado que cumpla esas características, inténtalo más tarde."
                 )
-        
+
+
         # latex2pdf error
+        except PDFLatexNotFoundError:
+            QMessageBox.critical(
+                self.window(),
+                "NO SE ENCUENTRA PDFLATEX",
+                "Lo siento, no se encuentra pdflatex. Si usted está en Windows, Ubuntu, Debian o Fedora, este se debería haber instalado automáticamente. En caso de que esté en Mac, debe instalar MacTex por su cuenta y ejecutar su instalador."
+                )
+            
         except RuntimeError as e:
             QMessageBox.critical(
                 self.window(),
                 "ERROR AL CREAR EL PROBLEMA",
                 f"Me temo que ha ocurrido un error al crear el PDF del problema:\n{e}"
                 )
+        
         
         # FALLBACK
         except Exception as e:

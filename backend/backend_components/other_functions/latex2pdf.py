@@ -4,10 +4,9 @@ EN: This script defines a function that turns a string with LaTeX code into a PD
 """
 
 
-import subprocess
-import tempfile
-import shutil
-import pathlib
+import subprocess, tempfile, shutil, pathlib
+
+from backend.backend_components.classes.exceptions import PDFLatexNotFoundError
 
 
 def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex") -> None:
@@ -16,8 +15,8 @@ def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex
     EN: Turns a string with LaTeX code into a PDF.
     
     Warning:
-        ES: La ruta del compilador elegido debe estar en el PATH de Windows (o equivalente).
-        EN: The chosen compiler's path must be in the Windows PATH (or equivalent).
+        ES: La ruta del compilador elegido debe estar en el PATH de Windows (o equivalente) o se lanzará un PDFLatexNotFoundError.
+        EN: The chosen compiler's path must be in the Windows PATH (or equivalent) or a PDFLatexNotFoundError will be raised.
     
     :param latex_code: String that contains the LaTeX code to compile.
     :type latex_code: str
@@ -26,6 +25,11 @@ def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex
     :param motor: Compilation engine. Optional: pdflatex by default.
     :type motor: str
     """
+    
+    try:
+        subprocess.run(["pdflatex", "--version"], capture_output=True, check=True)
+    except:
+        raise PDFLatexNotFoundError
     
     # creando un directorio temporal para compilar
     # creating a temporary directory for compilation

@@ -32,3 +32,14 @@ class InvalidLaTeXError(Exception):
     EN: This exception indicates that the AI-generated LaTeX code contains syntax errors.
     """
     pass
+
+
+# DEPENDENCIES
+
+class PDFLatexNotFoundError(Exception):
+    """
+    ES: Esta excepción indica que el usuario no tiene las dependencias de LaTeX necesarias (pdflatex) instaladas.
+    
+    EN: This exceptions indicates that the user has not installed the required LaTeX dependencies (pdflatex).
+    """
+    pass
