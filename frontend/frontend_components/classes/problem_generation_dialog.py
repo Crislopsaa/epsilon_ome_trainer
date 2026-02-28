@@ -35,6 +35,14 @@ class ProblemGenerationDialog(QDialog):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
+        self.topics = {
+            "Aritmética": "Aritmética y Teoría de Números",
+            "Álgebra": "Álgebra",
+            "Geometría": "Geometría",
+            "Combinatoria": "Combinatoria y Probabilidad",
+            "Lógica": "Lógica y Razonamiento"
+        }
+        
         self.initUI()
         self.apply_styles()
     
@@ -365,7 +373,7 @@ class ProblemGenerationDialog(QDialog):
         return (
             self.grade_selector.currentText(),
             self.difficulty_selector.currentText(),
-            self.topic_selector.currentText(),
+            self.topics[self.topic_selector.currentText()],
             quantity
             )
 
