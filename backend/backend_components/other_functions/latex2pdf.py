@@ -1,17 +1,19 @@
 """
-ES: Este script define una función que convierte un string con código LaTeX en un PDF.\n
+ES: Este script define una función que convierte un string con código LaTeX en un PDF.
+
 EN: This script defines a function that turns a string with LaTeX code into a PDF.
 """
 
 
-import subprocess, tempfile, shutil, pathlib
+import subprocess, tempfile, shutil, pathlib, sys
 
 from backend.backend_components.classes.exceptions import PDFLatexNotFoundError
 
 
 def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex") -> None:
     """
-    ES: Convierte un string con código LaTeX en un PDF.\n
+    ES: Convierte un string con código LaTeX en un PDF.
+    
     EN: Turns a string with LaTeX code into a PDF.
     
     Warning:
@@ -26,8 +28,12 @@ def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex
     :type motor: str
     """
     
+    # esto evita que se abran ventanas de comandos en Windows
+    # this prevents Windows from opening a cmd
+    creation_flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    
     try:
-        subprocess.run(["pdflatex", "--version"], capture_output=True, check=True)
+        subprocess.run(["pdflatex", "--version"], capture_output=True, check=True, creationflags=creation_flags)
     except:
         raise PDFLatexNotFoundError
     
@@ -52,7 +58,8 @@ def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex
                 cwd=tmpdir,
                 check=True,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
+                creationflags=creation_flags
             )
         
             temporary_pdf_path = tmpdir / pdf_filename
@@ -64,8 +71,6 @@ def latex2pdf(latex_code: str, output_path: pathlib.Path, motor: str = "pdflatex
                 raise RuntimeError("El proceso terminó pero no se generó el archivo PDF.")
             
             
-        # recogiendo las excepciones posibles
-        # handling possible exceptions
         except FileNotFoundError:
             raise RuntimeError(f"No se encontró el motor '{motor}'. Asegúrese de tener pdflatex (o el motor elegido) instalado y con la ruta añadida al PATH de Windows o equivalente (aunque al instalar Epsilon OME Trainer se le debería haber descargado ya pdflatex).")
         
