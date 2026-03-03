@@ -30,12 +30,19 @@ on:
 env:
   RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.event.inputs.tag_name }}
 
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   # ─────────────────────────────────────────
   # 1. WINDOWS → installer .exe (Inno Setup)
   # ─────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,6 +63,13 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt pyinstaller
 
+      - name: Get llama_cpp lib path
+        id: llama_path
+        run: |
+          $path = python -c "import llama_cpp, os; print(os.path.join(os.path.dirname(llama_cpp.__file__), 'lib'))"
+          echo "lib_path=$path" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
       - name: Build app folder with PyInstaller
         run: |
           # --onedir es obligatorio para el instalador: Inno Setup empaqueta una carpeta,
@@ -68,9 +82,10 @@ jobs:
           # which looks for its resources relative to the executable and fails with
           # --onefile because it self-extracts to %TEMP% with a different path each run.
           pyinstaller --onedir --windowed --name "EpsilonOmeTrainer" `
+            --icon "assets\images\windows_desktop_icon.ico" `
             --add-data "assets;assets" `
-            --add-data "backend;backend" `
-            --add-data "frontend;frontend" `
+            --add-data "THIRD-PARTY-LICENSES;THIRD-PARTY-LICENSES" `
+            --add-binary "${{ steps.llama_path.outputs.lib_path }}\*.dll;llama_cpp\lib" `
             epsilon.py
         shell: pwsh
 
@@ -85,15 +100,16 @@ jobs:
           [Setup]
           AppName=Epsilon OME Trainer
           AppVersion=$version
-          AppPublisher=Cristian Lopez Saavedra
-          DefaultDirName={autopf}\EpsilonOmeTrainer
+          AppPublisher=Cristian López Saavedra
+          PrivilegesRequired=admin
+          DefaultDirName={autopf64}\EpsilonOmeTrainer
           DefaultGroupName=Epsilon OME Trainer
           OutputBaseFilename=EpsilonOmeTrainer-Windows-Installer
           OutputDir=installer_output
           Compression=lzma2
           SolidCompression=yes
           WizardStyle=modern
-          SetupIconFile=assets\images\epsilon_logo.png
+          SetupIconFile=assets\images\windows_desktop_icon.ico
 
           [Languages]
           Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -116,7 +132,7 @@ jobs:
             Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""if (-not (Get-Command pdflatex -ErrorAction SilentlyContinue)) {{ winget install MiKTeX.MiKTeX --silent --accept-package-agreements --accept-source-agreements }}"""; \
             Flags: runhidden; \
             StatusMsg: "Instalando MiKTeX (LaTeX)... / Installing MiKTeX (LaTeX)..."
-          Filename: "{app}\EpsilonOmeTrainer.exe"; Description: "Iniciar Epsilon OME Trainer"; Flags: nowait postinstall skipifsilent
+          Filename: "{app}\EpsilonOmeTrainer.exe"; Description: "Iniciar Epsilon OME Trainer"; Flags: postinstall skipifsilent
           "@ | Out-File -FilePath installer.iss -Encoding utf8
         shell: pwsh
         env:
@@ -139,6 +155,7 @@ jobs:
   # ─────────────────────────────────────────
   build-macos:
     runs-on: macos-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -158,15 +175,17 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt pyinstaller
+        env:
+          CMAKE_ARGS: "-DGGML_NATIVE=OFF"
 
       - name: Build .app with PyInstaller
         run: |
           # --onedir en macOS genera directamente un .app, que internamente ya es una carpeta.
           # --onedir on macOS directly generates a .app, which internally is already a folder.
           pyinstaller --onedir --windowed --name "EpsilonOmeTrainer" \
+            --icon "assets/images/mac_desktop_icon.icns" \
             --add-data "assets:assets" \
-            --add-data "backend:backend" \
-            --add-data "frontend:frontend" \
+            --add-data "THIRD-PARTY-LICENSES:THIRD-PARTY-LICENSES" \
             epsilon.py
 
       - name: Verify PyInstaller output
@@ -199,6 +218,7 @@ jobs:
   # ─────────────────────────────────────────
   build-deb:
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -230,8 +250,7 @@ jobs:
         run: |
           pyinstaller --onedir --windowed --name "EpsilonOmeTrainer" \
             --add-data "assets:assets" \
-            --add-data "backend:backend" \
-            --add-data "frontend:frontend" \
+            --add-data "THIRD-PARTY-LICENSES:THIRD-PARTY-LICENSES" \
             epsilon.py
 
       - name: Verify PyInstaller output
@@ -241,58 +260,31 @@ jobs:
         env:
           PKG_VERSION: ${{ env.RELEASE_VERSION }}
         run: |
-          PKG_DIR="deb_build/epsilon-ome-trainer_${PKG_VERSION}_amd64"
+          RAW_VERSION="${PKG_VERSION#v}"
+          if [[ "$RAW_VERSION" == "dev-build" ]]; then
+            DEB_VERSION="0.0.0"
+          else
+            DEB_VERSION="$RAW_VERSION"
+          fi
+
+          PKG_DIR="deb_build/epsilon-ome-trainer_${DEB_VERSION}_amd64"
           mkdir -p "$PKG_DIR/DEBIAN"
-          # /opt es el estándar para apps de terceros que no vienen del repositorio oficial.
-          # /opt is the standard for third-party apps that do not come from the official repository.
           mkdir -p "$PKG_DIR/opt/epsilon-ome-trainer"
           mkdir -p "$PKG_DIR/usr/local/bin"
           mkdir -p "$PKG_DIR/usr/share/applications"
           mkdir -p "$PKG_DIR/usr/share/pixmaps"
 
           cp -r dist/EpsilonOmeTrainer/. "$PKG_DIR/opt/epsilon-ome-trainer/"
-          # chmod explícito porque cp -r no garantiza conservar el bit de ejecución en todos los entornos.
-          # Explicit chmod because cp -r does not guarantee preserving the execute bit in all environments.
+          chmod 755 "$PKG_DIR/opt/epsilon-ome-trainer"
           chmod +x "$PKG_DIR/opt/epsilon-ome-trainer/EpsilonOmeTrainer"
-          # Enlace simbólico para que el ejecutable esté en el PATH sin añadir /opt al PATH global.
-          # Symlink so the executable is in PATH without adding /opt to the global PATH.
           ln -s /opt/epsilon-ome-trainer/EpsilonOmeTrainer "$PKG_DIR/usr/local/bin/epsilon-ome-trainer"
           cp assets/images/epsilon_logo.png "$PKG_DIR/usr/share/pixmaps/epsilon-ome-trainer.png"
 
-          # Depends: texlive-full hace que apt instale LaTeX automáticamente al instalar la app,
-          # incluyendo pdflatex en el PATH. Se usa texlive-full porque la IA puede generar
-          # código LaTeX con cualquier paquete y no podemos predecir cuáles serán necesarios.
-          # ---
-          # Depends: texlive-full makes apt install LaTeX automatically when installing the app,
-          # including pdflatex in PATH. texlive-full is used because the AI can generate LaTeX
-          # code with any package and we cannot predict which ones will be needed.
-          # El fichero control no puede tener indentación: dpkg-deb falla si las directivas
-          # no empiezan en columna 0. Se usa cat con el heredoc pegado al margen izquierdo.
-          # ---
-          # The control file cannot be indented: dpkg-deb fails if directives do not start
-          # at column 0. cat is used with the heredoc flush against the left margin.
-cat > "$PKG_DIR/DEBIAN/control" << EOF
-Package: epsilon-ome-trainer
-Version: ${PKG_VERSION}
-Section: education
-Priority: optional
-Architecture: amd64
-Depends: texlive-full
-Maintainer: Cristian López Saavedra <EpsilonOmeTrainer@gmail.com>
-Description: EPSILON OME TRAINER
- Generador de problemas de la Olimpiada Matemática Española impulsado por IA.
-EOF
+          printf 'Package: epsilon-ome-trainer\nVersion: %s\nSection: education\nPriority: optional\nArchitecture: amd64\nDepends: texlive-full\nMaintainer: Cristian López Saavedra <EpsilonOmeTrainer@gmail.com>\nDescription: EPSILON OME TRAINER\n Generador de problemas de la Olimpiada Matemática Española impulsado por IA.\n' \
+            "${DEB_VERSION}" > "$PKG_DIR/DEBIAN/control"
 
-cat > "$PKG_DIR/usr/share/applications/epsilon-ome-trainer.desktop" << EOF
-[Desktop Entry]
-Name=Epsilon OME Trainer
-Comment=Generador de problemas para la OME
-Exec=/opt/epsilon-ome-trainer/EpsilonOmeTrainer
-Icon=epsilon-ome-trainer
-Terminal=false
-Type=Application
-Categories=Education;
-EOF
+          printf '[Desktop Entry]\nName=Epsilon OME Trainer\nComment=Generador de problemas para la OME\nExec=/opt/epsilon-ome-trainer/EpsilonOmeTrainer\nIcon=epsilon-ome-trainer\nTerminal=false\nType=Application\nCategories=Education;\n' \
+            > "$PKG_DIR/usr/share/applications/epsilon-ome-trainer.desktop"
 
           dpkg-deb --build --root-owner-group "$PKG_DIR" dist/
           mv dist/*.deb dist/EpsilonOmeTrainer-Linux-Debian-Ubuntu.deb
@@ -308,6 +300,7 @@ EOF
   # ─────────────────────────────────────────
   build-rpm:
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     container:
       image: fedora:latest
     steps:
@@ -316,35 +309,27 @@ EOF
         with:
           fetch-depth: 0
 
-      - name: Install system dependencies
+      - name: Install system dependencies and Python
         run: |
-          # git no viene en la imagen mínima de Fedora y actions/checkout lo necesita.
-          # git is not included in the minimal Fedora image and actions/checkout needs it.
           dnf install -y \
             git \
+            python3.12 \
+            gcc gcc-c++ cmake \
             mesa-libGL libxkbcommon \
             rpm-build rpmdevtools
 
-      - name: Install Python 3.12.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.10"
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-fedora-${{ hashFiles('requirements.txt') }}
-
       - name: Install Python dependencies
-        run: pip install -r requirements.txt pyinstaller
+        run: |
+          python3.12 -m ensurepip --upgrade
+          python3.12 -m pip install -r requirements.txt pyinstaller
+        env:
+          CMAKE_ARGS: "-DGGML_NATIVE=OFF"
 
       - name: Build app folder with PyInstaller
         run: |
-          pyinstaller --onedir --windowed --name "EpsilonOmeTrainer" \
+          python3.12 -m PyInstaller --onedir --windowed --name "EpsilonOmeTrainer" \
             --add-data "assets:assets" \
-            --add-data "backend:backend" \
-            --add-data "frontend:frontend" \
+            --add-data "THIRD-PARTY-LICENSES:THIRD-PARTY-LICENSES" \
             epsilon.py
 
       - name: Verify PyInstaller output
@@ -357,61 +342,47 @@ EOF
         env:
           PKG_VERSION: ${{ env.RELEASE_VERSION }}
         run: |
-          RPM_VERSION="${PKG_VERSION#v}"
-          # El fichero .spec no puede tener indentación: rpmbuild falla si las directivas
-          # no empiezan en columna 0. El heredoc va pegado al margen izquierdo del archivo.
-          # ---
-          # The .spec file cannot be indented: rpmbuild fails if directives do not start
-          # at column 0. The heredoc is flush against the left margin of the file.
-cat > ~/rpmbuild/SPECS/epsilon-ome-trainer.spec << SPECEOF
-Name:           epsilon-ome-trainer
-Version:        ${RPM_VERSION}
-Release:        1%{?dist}
-Summary:        Generador de problemas para la Olimpiada Matemática Española con IA
-License:        GPL-3.0
-BuildArch:      x86_64
-# texlive-scheme-full por el mismo motivo que texlive-full en el .deb:
-# la IA puede generar cualquier paquete LaTeX y una distribución parcial fallaría.
-# ---
-# texlive-scheme-full for the same reason as texlive-full in the .deb:
-# the AI can generate any LaTeX package and a partial distribution would fail.
-Requires:       texlive-scheme-full
-
-%description
-EPSILON OME TRAINER es una herramienta de escritorio que genera problemas
-de estilo olímpico para la Olimpiada Matemática Española de 2º ESO.
-
-%install
-mkdir -p %{buildroot}/opt/epsilon-ome-trainer
-mkdir -p %{buildroot}/usr/local/bin
-mkdir -p %{buildroot}/usr/share/applications
-mkdir -p %{buildroot}/usr/share/pixmaps
-cp -r %{_sourcedir}/EpsilonOmeTrainer/. %{buildroot}/opt/epsilon-ome-trainer/
-chmod 755 %{buildroot}/opt/epsilon-ome-trainer/EpsilonOmeTrainer
-ln -s /opt/epsilon-ome-trainer/EpsilonOmeTrainer %{buildroot}/usr/local/bin/epsilon-ome-trainer
-install -m 644 %{_sourcedir}/epsilon_logo.png %{buildroot}/usr/share/pixmaps/epsilon-ome-trainer.png
-
-cat > %{buildroot}/usr/share/applications/epsilon-ome-trainer.desktop << EOF
-[Desktop Entry]
-Name=Epsilon OME Trainer
-Comment=Generador de problemas para la OME
-Exec=/opt/epsilon-ome-trainer/EpsilonOmeTrainer
-Icon=epsilon-ome-trainer
-Terminal=false
-Type=Application
-Categories=Education;
-EOF
-
-%files
-/opt/epsilon-ome-trainer/
-/usr/local/bin/epsilon-ome-trainer
-/usr/share/applications/epsilon-ome-trainer.desktop
-/usr/share/pixmaps/epsilon-ome-trainer.png
-
-%changelog
-* $(date "+%a %b %d %Y") Cristian López Saavedra <EpsilonOmeTrainer@gmail.com> - ${RPM_VERSION}-1
-- Primera versión empaquetada
-SPECEOF
+          RAW_VERSION="${PKG_VERSION#v}"
+          if [[ "$RAW_VERSION" == "dev-build" ]]; then
+            RPM_VERSION="0.0.0"
+          else
+            RPM_VERSION="$RAW_VERSION"
+          fi
+          CHANGELOG_DATE=$(date "+%a %b %d %Y")
+          SPEC=~/rpmbuild/SPECS/epsilon-ome-trainer.spec
+          echo "Name:           epsilon-ome-trainer"                                                           >  "$SPEC"
+          echo "Version:        ${RPM_VERSION}"                                                                >> "$SPEC"
+          echo "Release:        1%{?dist}"                                                                     >> "$SPEC"
+          echo "Summary:        Generador de problemas para la Olimpiada Matemática Española con IA"           >> "$SPEC"
+          echo "License:        GPL-3.0"                                                                       >> "$SPEC"
+          echo "BuildArch:      x86_64"                                                                        >> "$SPEC"
+          echo "# texlive-scheme-full: la IA puede generar cualquier paquete LaTeX."                           >> "$SPEC"
+          echo "Requires:       texlive-scheme-full"                                                           >> "$SPEC"
+          echo ""                                                                                               >> "$SPEC"
+          echo "%description"                                                                                   >> "$SPEC"
+          echo "EPSILON OME TRAINER es una herramienta de escritorio que genera problemas"                     >> "$SPEC"
+          echo "de estilo olímpico para la Olimpiada Matemática Española de 2º ESO."                           >> "$SPEC"
+          echo ""                                                                                               >> "$SPEC"
+          echo "%install"                                                                                       >> "$SPEC"
+          echo "mkdir -p %{buildroot}/opt/epsilon-ome-trainer"                                                 >> "$SPEC"
+          echo "mkdir -p %{buildroot}/usr/local/bin"                                                           >> "$SPEC"
+          echo "mkdir -p %{buildroot}/usr/share/applications"                                                  >> "$SPEC"
+          echo "mkdir -p %{buildroot}/usr/share/pixmaps"                                                       >> "$SPEC"
+          echo "cp -r %{_sourcedir}/EpsilonOmeTrainer/. %{buildroot}/opt/epsilon-ome-trainer/"                 >> "$SPEC"
+          echo "chmod 755 %{buildroot}/opt/epsilon-ome-trainer/EpsilonOmeTrainer"                              >> "$SPEC"
+          echo "ln -s /opt/epsilon-ome-trainer/EpsilonOmeTrainer %{buildroot}/usr/local/bin/epsilon-ome-trainer" >> "$SPEC"
+          echo "install -m 644 %{_sourcedir}/epsilon_logo.png %{buildroot}/usr/share/pixmaps/epsilon-ome-trainer.png" >> "$SPEC"
+          printf 'printf "[Desktop Entry]\\nName=Epsilon OME Trainer\\nComment=Generador de problemas para la OME\\nExec=/opt/epsilon-ome-trainer/EpsilonOmeTrainer\\nIcon=epsilon-ome-trainer\\nTerminal=false\\nType=Application\\nCategories=Education;\\n" > %%{buildroot}/usr/share/applications/epsilon-ome-trainer.desktop\n' >> "$SPEC"
+          echo ""                                                                                               >> "$SPEC"
+          echo "%files"                                                                                         >> "$SPEC"
+          echo "/opt/epsilon-ome-trainer/"                                                                      >> "$SPEC"
+          echo "/usr/local/bin/epsilon-ome-trainer"                                                            >> "$SPEC"
+          echo "/usr/share/applications/epsilon-ome-trainer.desktop"                                           >> "$SPEC"
+          echo "/usr/share/pixmaps/epsilon-ome-trainer.png"                                                    >> "$SPEC"
+          echo ""                                                                                               >> "$SPEC"
+          echo "%changelog"                                                                                     >> "$SPEC"
+          echo "* ${CHANGELOG_DATE} Cristian López Saavedra <EpsilonOmeTrainer@gmail.com> - ${RPM_VERSION}-1"  >> "$SPEC"
+          echo "- Primera versión empaquetada"                                                                  >> "$SPEC"
 
       - name: Copy app folder and icon to rpmbuild SOURCES
         run: |
@@ -422,7 +393,7 @@ SPECEOF
           cp assets/images/epsilon_logo.png ~/rpmbuild/SOURCES/
 
       - name: Build .rpm
-        run: rpmbuild -bb ~/rpmbuild/SPECS/epsilon-ome-trainer.spec
+        run: QA_RPATHS=$(( 0x0002|0x0008 )) rpmbuild -bb ~/rpmbuild/SPECS/epsilon-ome-trainer.spec
 
       - name: Move .rpm to dist directory
         run: |
@@ -465,13 +436,24 @@ SPECEOF
       - name: Create release and attach binaries
         uses: softprops/action-gh-release@v2
         with:
-          # generate_release_notes compara el tag actual con el anterior para generar el changelog.
-          # En el primer release no hay tag anterior, así que lista todos los commits del proyecto.
-          # ---
-          # generate_release_notes compares the current tag with the previous one for the changelog.
-          # On the first release there is no previous tag, so it lists all commits in the project.
           generate_release_notes: true
-          name: "Epsilon OME Trainer ${{ env.RELEASE_VERSION }}"
+          name: "Epsilon OME Trainer ${{ github.ref_name }}"
+          body: |
+            ## 📥 Instalación
+
+            | Plataforma | Archivo |
+            |---|---|
+            | Windows | `EpsilonOmeTrainer-Windows-Installer.exe` |
+            | macOS | `EpsilonOmeTrainer-macOS.dmg` |
+            | Debian / Ubuntu | `EpsilonOmeTrainer-Linux-Debian-Ubuntu.deb` |
+            | Fedora | `EpsilonOmeTrainer-Linux-Fedora.rpm` |
+
+            > ⚠️ **macOS:** es necesario instalar [MacTeX](https://www.tug.org/mactex/) manualmente para que la app funcione correctamente.
+
+            > ⚠️ **Windows:** el instalador descarga MiKTeX automáticamente si `pdflatex` no está en el PATH.
+
+            > ⚠️ **Linux:** LaTeX se instala automáticamente como dependencia del paquete.
+
           files: |
             release-artifacts/windows-build/EpsilonOmeTrainer-Windows-Installer.exe
             release-artifacts/macos-build/EpsilonOmeTrainer-macOS.dmg
