@@ -34,16 +34,16 @@ However, in regions like **Melilla**, this infrastructure is practically non-exi
 
 Utilizing advanced **Artificial Intelligence** models, the application will generate (once the AI is trained) Olympiad-style problems of varying difficulty (Provincial, Regional, and National) and topics (Arithmetic & Number Theory, Algebra, Geometry, Combinatorics & Probability, and Logic & Reasoning), breaking the barrier of the lack of specialized teachers.
 
-# 📼 DEMO
+# 📼 VIDEO DEMO
 
-The visual elements are in Spanish, but the audio is in English for English speakers to understand everything without issues.
+The following video displays the differents sections of the app, using the last version available in the [Releases](https://github.com/Crislopsaa/epsilon_ome_trainer/releases) section. The visual elements are in Spanish, but the audio is in English for English speakers to understand everything without issues.
 
 <br>
 <div align="center">
-    <a href="https://drive.google.com/file/d/1h3v9VlnXVyhw6PH22DZpPhXS1uGP12VO/view?usp=sharing">
+    <a href="https://drive.google.com/file/d/1Gi4U5YqhARxCa-Dlaua5MkuVTA6vu4XW/view?usp=sharing">
         <img src="https://img.shields.io/badge/WATCH_DEMO_ON-Google_Drive-blue?style=for-the-badge&logo=googledrive&logoColor=white" alt="Watch Demo on Google Drive">
     </a>
-    <img src="https://img.shields.io/badge/Duration-02:00_min-success?style=for-the-badge" alt="Duration">
+    <img src="https://img.shields.io/badge/Duration-05:00_min-success?style=for-the-badge" alt="Duration">
 </div>
 <br>
 
@@ -70,7 +70,7 @@ The visual elements are in Spanish, but the audio is in English for English spea
 ## 🛠️ Installation
 
 ### 📦 End User
-> ⚠️ **Note:** The project is currently in the development phase. The official installer (for Windows, Mac, and Ubuntu) will be available soon in the [Releases](https://github.com/Crislopsaa/epsilon_ome_trainer/releases) section. Currently, the AI is not trained, so a demo without AI will be launched shortly. In the future, the AI will be trained and its corresponding installer will be created.
+> ⚠️ **Note:** The project is currently in the development phase. You can download the executables of the latest demo (pre-release) for Windows, macOS, Ubuntu/Debian and Fedora in the [Releases](https://github.com/Crislopsaa/epsilon_ome_trainer/releases) section. Currently, the AI is not trained, so in the future it will be trained, and its corresponding installer will be created.
 
 ### 💻 Developers (Running from Source Code)
 If you wish to collaborate (currently there are no collaborators; I am developing it independently) or test the latest features before the installer launch, follow these steps:
